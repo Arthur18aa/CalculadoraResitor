@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Combinación de Resistencias Comerciales</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyan: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            900: '#164e63',
+                        },
+                        darkBg: '#0b0f19',
+                        cardBg: 'rgba(17, 24, 39, 0.7)',
+                        glassBorder: 'rgba(255, 255, 255, 0.08)'
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Monaco', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #080c14;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.12) 0px, transparent 50%);
+            background-attachment: fixed;
+            font-family: 'Inter', sans-serif;
+            color: #f3f4f6;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.4);
+        }
+
+        .glow-cyan-lg {
+            box-shadow: 0 0 35px -5px rgba(6, 182, 212, 0.5);
+        }
+
+        /* Bands Color Styling */
+        .color-band {
+            width: 8px;
+            height: 100%;
+            display: inline-block;
+            border-radius: 1px;
+        }
+
+        /* Resistor Body Graphic */
+        .resistor-body {
+            background: linear-gradient(180deg, #d1d5db 0%, #f3f4f6 50%, #9ca3af 100%);
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.4);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(6, 182, 212, 0.6);
+        }
+
+        /* SVG Schematic line animations */
+        .schematic-line {
+            stroke-dasharray: 8;
+            animation: dash 30s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12 text-slate-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-microchip text-slate-950 text-xl font-bold"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                        ResistorCombo <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-mono">PRO</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Optimizador Electrónico de Resistencias Comerciales</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-xs text-slate-400 hidden sm:inline-flex items-center gap-1">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> IEC 60063 / E12 & E96
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+
+        <!-- Control Panel & Input Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Input Form (5 cols) -->
+            <div class="lg:col-span-5 glass-panel rounded-2xl p-6 space-y-6">
+                <div class="border-b border-slate-800 pb-4">
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-[#06b6d4] fa-sliders text-cyan-400"></i> Parámetros de Entrada
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Configura el valor objetivo y la serie comercial requerida</p>
+                </div>
+
+                <!-- Presets -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                        Presets Rápidos
+                    </label>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="setPreset('88.5')" class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">88.5 Ω</button>
+                        <button onclick="setPreset('1.54k')" class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">1.54 kΩ</button>
+                        <button onclick="setPreset('4.7k')" class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">4.7 kΩ</button>
+                        <button onclick="setPreset('12.3k')" class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">12.3 kΩ</button>
+                        <button onclick="setPreset('250k')" class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">250 kΩ</button>
+                    </div>
+                </div>
+
+                <!-- Target Input -->
+                <div>
+                    <label for="targetInput" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                        Resistencia Objetivo ($R_{target}$)
+                    </label>
+                    <div class="relative rounded-xl shadow-sm">
+                        <input type="text" id="targetInput" placeholder="Ej: 1540, 1.54k, 2.2M" value="1.54k"
+                            class="w-full bg-slate-900/90 text-white font-mono text-lg rounded-xl pl-4 pr-16 py-3 border border-slate-700 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition outline-none"
+                            onkeyup="if(event.key === 'Enter') calculateCombinations()">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400 font-mono text-sm">
+                            Ω
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">Soporta notación numérica simple o sufijos: <span class="text-cyan-400">k</span> ($\times 10^3$), <span class="text-cyan-400">M</span> ($\times 10^6$).</p>
+                </div>
+
+                <!-- Tolerance & Series selection -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                            Tolerancia / Serie
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center p-3 rounded-xl bg-slate-900/50 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                                <input type="radio" name="tolerance" value="1" checked class="accent-cyan-500 h-4 w-4" onchange="calculateCombinations()">
+                                <div class="ml-3">
+                                    <span class="block text-sm font-medium text-white">1% (Serie E96)</span>
+                                    <span class="block text-[10px] text-slate-400">Alta Precisión (96 valores/década)</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 rounded-xl bg-slate-900/50 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                                <input type="radio" name="tolerance" value="10" class="accent-cyan-500 h-4 w-4" onchange="calculateCombinations()">
+                                <div class="ml-3">
+                                    <span class="block text-sm font-medium text-white">10% (Serie E12)</span>
+                                    <span class="block text-[10px] text-slate-400">Estándar Comercial (12 valores/década)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                            Máx. Resistencias
+                        </label>
+                        <select id="maxResistors" onchange="calculateCombinations()" class="w-full bg-slate-900/90 text-white font-mono text-sm rounded-xl px-3 py-3 border border-slate-700 focus:border-cyan-500 outline-none">
+                            <option value="3" selected>Hasta 3 Resistencias</option>
+                            <option value="2">Hasta 2 Resistencias</option>
+                            <option value="1">Solo 1 Resistencia</option>
+                        </select>
+                        <div class="mt-3 p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-[11px] text-cyan-300">
+                            <i class="fa-solid fa-circle-info mr-1"></i> Se evalúan automáticamente todas las 8 topologías mixtas posibles.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <button onclick="calculateCombinations()" class="w-full py-3.5 px-4 rounded-xl font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 transition shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-calculator text-lg"></i>
+                    <span>Calcular Combinación Óptima</span>
+                </button>
+
+            </div>
+
+            <!-- Right: Best Match Hero Banner (7 cols) -->
+            <div id="bestResultCard" class="lg:col-span-7 glass-panel rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden border-cyan-500/30 glow-cyan">
+                <!-- Background ambient light -->
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div>
+                    <!-- Header -->
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                MEJOR OPCIÓN ENCONTRADA
+                            </span>
+                            <span id="bestCountBadge" class="px-2 py-0.5 rounded text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700">3 Resistencias</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block">Error Absoluto</span>
+                            <span id="bestError" class="text-xl font-mono font-bold text-emerald-400">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- Main Values display -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6 items-center">
+                        <div>
+                            <span class="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Valor Equivalente Logrado</span>
+                            <div class="text-3xl sm:text-4xl font-mono font-extrabold text-white mt-1 flex items-baseline gap-2">
+                                <span id="bestEquivalent">1.540 kΩ</span>
+                                <span class="text-xs text-slate-400 font-sans font-normal" id="targetComparison">vs 1.540 kΩ req.</span>
+                            </div>
+                            <p id="bestTopologyName" class="text-sm font-medium text-cyan-400 mt-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-diagram-project"></i> 2 en Paralelo + 1 en Serie
+                            </p>
+                        </div>
+
+                        <!-- Resistors components list -->
+                        <div class="bg-slate-900/60 rounded-xl p-3.5 border border-slate-800/80 space-y-2">
+                            <span class="text-[11px] text-slate-400 uppercase tracking-wider block font-semibold mb-1">Componentes Elegidos:</span>
+                            <div id="bestComponentsList" class="space-y-1.5 font-mono text-sm">
+                                <!-- Dynamic JS content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Resistor Color Bands Preview -->
+                <div class="border-t border-slate-800/80 pt-4 mt-2">
+                    <span class="text-xs text-slate-400 block mb-3 font-semibold uppercase tracking-wider">Código de Colores de los Componentes Seleccionados</span>
+                    <div id="colorBandsContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Dynamic Resistors with color bands -->
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- Schematics & Math Formula Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Dynamic SVG Schematic (7 cols) -->
+            <div class="lg:col-span-7 glass-panel rounded-2xl p-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                    <h3 class="text-md font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-cyan-400"></i> Diagrama Esquemático de la Topología
+                    </h3>
+                    <span id="schematicLabel" class="text-xs font-mono text-cyan-300 bg-cyan-950/60 px-2.5 py-1 rounded border border-cyan-800">
+                        Topología 3: (R1 || R2) + R3
+                    </span>
+                </div>
+
+                <!-- Canvas / SVG Container -->
+                <div class="bg-slate-950/80 rounded-xl border border-slate-800/80 p-4 min-h-[220px] flex items-center justify-center relative overflow-hidden">
+                    <svg id="schematicSvg" class="w-full h-48 max-w-lg" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Rendered dynamically -->
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Mathematical Formula & Breakdown (5 cols) -->
+            <div class="lg:col-span-5 glass-panel rounded-2xl p-6 flex flex-col justify-between">
+                <div>
+                    <div class="border-b border-slate-800 pb-4 mb-4">
+                        <h3 class="text-md font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-square-root-variable text-cyan-400"></i> Formulación Matemática
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Ecuación equivalente utilizada para el cálculo</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-800 mb-4">
+                        <span class="text-xs text-slate-400 block mb-1">Fórmula General:</span>
+                        <div id="formulaDisplay" class="font-mono text-base text-cyan-300 font-semibold text-center py-2 bg-slate-950/60 rounded border border-slate-800/80">
+                            R_eq = (R1 * R2) / (R1 + R2) + R3
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 text-xs text-slate-300">
+                        <span class="text-slate-400 block font-semibold uppercase tracking-wider">Desglose Paso a Paso:</span>
+                        <div id="mathBreakdown" class="font-mono space-y-1.5 bg-slate-900/40 p-3 rounded-lg border border-slate-800/50">
+                            <!-- Dynamic math breakdown -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                    <span><i class="fa-solid fa-check-double text-emerald-400 mr-1"></i> Verificado numéricamente</span>
+                    <span id="toleranceBadge" class="font-mono text-cyan-400">E96 (1%)</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Top 10 Interactive Results Table -->
+        <section class="glass-panel rounded-2xl p-6 space-y-4">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol text-cyan-400"></i> Top Combinaciones Óptimas
+                    </h3>
+                    <p class="text-xs text-slate-400">Las mejoes combinaciones ordenadas por menor porcentaje de error relativo</p>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-slate-400 font-medium mr-1">Filtrar por:</span>
+                    <button onclick="filterTable('all')" id="btnFilterAll" class="px-3 py-1 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Todas</button>
+                    <button onclick="filterTable(1)" id="btnFilter1" class="px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 hover:text-white border border-slate-700">1 Resistencia</button>
+                    <button onclick="filterTable(2)" id="btnFilter2" class="px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 hover:text-white border border-slate-700">2 Resistencias</button>
+                    <button onclick="filterTable(3)" id="btnFilter3" class="px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 hover:text-white border border-slate-700">3 Resistencias</button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider font-semibold">
+                            <th class="py-3 px-4"># Pos</th>
+                            <th class="py-3 px-4">Topología</th>
+                            <th class="py-3 px-4">Valores ($R_1, R_2, R_3$)</th>
+                            <th class="py-3 px-4 text-right">Valor $R_{eq}$</th>
+                            <th class="py-3 px-4 text-right">Error Relativo (%)</th>
+                            <th class="py-3 px-4 text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody" class="divide-y divide-slate-800/60 font-mono text-sm">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- JS Logic -->
+    <script>
+        // ==========================================
+        // 1. DATA DEFINITIONS & E12/E96 BASE VALUES
+        // ==========================================
+
+        const E12_BASE = [10, 12, 15, 18, 22, 27, 33, 39, 47, 56, 68, 82];
+
+        const E96_BASE = [
+            100, 102, 105, 107, 110, 113, 115, 118, 121, 124, 127, 130,
+            133, 137, 140, 143, 147, 150, 154, 158, 162, 165, 169, 174,
+            178, 182, 187, 191, 196, 200, 205, 210, 215, 221, 226, 232,
+            237, 243, 249, 255, 261, 267, 274, 280, 287, 294, 301, 309,
+            316, 324, 332, 340, 348, 357, 365, 374, 383, 392, 402, 412,
+            422, 432, 442, 453, 464, 475, 487, 499, 511, 523, 536, 549,
+            562, 576, 590, 604, 619, 634, 649, 665, 681, 698, 715, 732,
+            750, 768, 787, 806, 825, 845, 866, 887, 909, 931, 953, 976
+        ];
+
+        // Color map for standard resistors
+        const COLOR_MAP = {
+            black:  { name: 'Negro', hex: '#1e293b', digit: 0, mult: 1, textHex: '#ffffff' },
+            brown:  { name: 'Marrón', hex: '#854d0e', digit: 1, mult: 10, textHex: '#ffffff' },
+            red:    { name: 'Rojo', hex: '#dc2626', digit: 2, mult: 100, textHex: '#ffffff' },
+            orange: { name: 'Naranja', hex: '#ea580c', digit: 3, mult: 1000, textHex: '#ffffff' },
+            yellow: { name: 'Amarillo', hex: '#facc15', digit: 4, mult: 10000, textHex: '#000000' },
+            green:  { name: 'Verde', hex: '#16a34a', digit: 5, mult: 100000, textHex: '#ffffff' },
+            blue:   { name: 'Azul', hex: '#2563eb', digit: 6, mult: 1000000, textHex: '#ffffff' },
+            violet: { name: 'Violeta', hex: '#9333ea', digit: 7, mult: 10000000, textHex: '#ffffff' },
+            grey:   { name: 'Gris', hex: '#64748b', digit: 8, mult: 0.01, textHex: '#ffffff' },
+            white:  { name: 'Blanco', hex: '#f8fafc', digit: 9, mult: 0.1, textHex: '#000000' },
+            gold:   { name: 'Dorado', hex: '#eab308', mult: 0.1, tol: '5%' },
+            silver: { name: 'Plateado', hex: '#94a3b8', mult: 0.01, tol: '10%' }
+        };
+
+        const COLOR_DIGITS = [
+            COLOR_MAP.black, COLOR_MAP.brown, COLOR_MAP.red, COLOR_MAP.orange,
+            COLOR_MAP.yellow, COLOR_MAP.green, COLOR_MAP.blue, COLOR_MAP.violet,
+            COLOR_MAP.grey, COLOR_MAP.white
+        ];
+
+        // Global state variable
+        let currentResults = [];
+        let activeFilter = 'all';
+
+        // ==========================================
+        // 2. HELPER UTILITIES
+        // ==========================================
+
+        function parseResistorValue(inputStr) {
+            if (!inputStr) return NaN;
+            let str = inputStr.trim().toLowerCase().replace(',', '.').replace('Ω', '');
+            let multiplier = 1;
+
+            if (str.endsWith('k')) {
+                multiplier = 1000;
+                str = str.slice(0, -1);
+            } else if (str.endsWith('m')) {
+                multiplier = 1000000;
+                str = str.slice(0, -1);
+            } else if (str.endsWith('r')) {
+                multiplier = 1;
+                str = str.slice(0, -1);
+            }
+
+            const val = parseFloat(str);
+            if (isNaN(val) || val <= 0) return NaN;
+            return val * multiplier;
+        }
+
+        function formatResistor(val) {
+            if (isNaN(val) || val === null || val === undefined) return '-';
+            if (val >= 1e6) {
+                return (val / 1e6).toFixed(val % 1e6 === 0 ? 0 : 3).replace(/\.?0+$/, '') + ' MΩ';
+            }
+            if (val >= 1000) {
+                return (val / 1000).toFixed(val % 1000 === 0 ? 0 : 3).replace(/\.?0+$/, '') + ' kΩ';
+            }
+            return val.toFixed(val % 1 === 0 ? 0 : 2).replace(/\.?0+$/, '') + ' Ω';
+        }
+
+        function generateCommercialValues(tolerance) {
+            const values = [];
+            const decades = [1, 10, 100, 1000, 10000, 100000, 1000000];
+            
+            if (tolerance === 10) {
+                // E12: values from 10 to 82 * multipliers
+                decades.forEach(dec => {
+                    E12_BASE.forEach(base => {
+                        const val = (base / 10) * dec;
+                        if (val >= 1 && val <= 10000000) {
+                            values.push(val);
+                        }
+                    });
+                });
+            } else {
+                // E96: values from 100 to 976 * multipliers
+                decades.forEach(dec => {
+                    E96_BASE.forEach(base => {
+                        const val = (base / 100) * dec;
+                        if (val >= 1 && val <= 10000000) {
+                            values.push(val);
+                        }
+                    });
+                });
+            }
+
+            return [...new Set(values)].sort((a, b) => a - b);
+        }
+
+        function setPreset(val) {
+            document.getElementById('targetInput').value = val;
+            calculateCombinations();
+        }
+
+        // ==========================================
+        // 3. COLOR BANDS GENERATOR
+        // ==========================================
+
+        function getColorBands(val, tolerance) {
+            if (!val || val <= 0) return [];
+
+            if (tolerance === 10) {
+                // 4-band resistor for E12
+                // Significant 2 digits
+                let exp = Math.floor(Math.log10(val));
+                let sig = val / Math.pow(10, exp - 1);
+                sig = Math.round(sig);
+                if (sig >= 100) {
+                    sig = Math.round(sig / 10);
+                    exp += 1;
+                }
+
+                const d1 = Math.floor(sig / 10);
+                const d2 = sig % 10;
+                const multExp = exp - 1;
+
+                let multColor = COLOR_MAP.silver;
+                if (multExp === -2) multColor = COLOR_MAP.silver;
+                else if (multExp === -1) multColor = COLOR_MAP.gold;
+                else if (multExp >= 0 && multExp <= 9) multColor = COLOR_DIGITS[multExp];
+
+                return [
+                    COLOR_DIGITS[d1] || COLOR_MAP.black,
+                    COLOR_DIGITS[d2] || COLOR_MAP.black,
+                    multColor,
+                    COLOR_MAP.silver // 10%
+                ];
+            } else {
+                // 5-band resistor for E96 (1%)
+                let exp = Math.floor(Math.log10(val));
+                let sig = val / Math.pow(10, exp - 2);
+                sig = Math.round(sig);
+                if (sig >= 1000) {
+                    sig = Math.round(sig / 10);
+                    exp += 1;
+                }
+
+                const d1 = Math.floor(sig / 100);
+                const d2 = Math.floor((sig % 100) / 10);
+                const d3 = sig % 10;
+                const multExp = exp - 2;
+
+                let multColor = COLOR_MAP.silver;
+                if (multExp === -2) multColor = COLOR_MAP.silver;
+                else if (multExp === -1) multColor = COLOR_MAP.gold;
+                else if (multExp >= 0 && multExp <= 9) multColor = COLOR_DIGITS[multExp];
+
+                return [
+                    COLOR_DIGITS[d1] || COLOR_MAP.black,
+                    COLOR_DIGITS[d2] || COLOR_MAP.black,
+                    COLOR_DIGITS[d3] || COLOR_MAP.black,
+                    multColor,
+                    COLOR_MAP.brown // 1%
+                ];
+            }
+        }
+
+        // ==========================================
+        // 4. COMBINATION ALGORITHM (1, 2, 3 RESISTORS)
+        // ==========================================
+
+        function solveCombinations(target, commercialValues, maxResistors) {
+            const results = [];
+            const len = commercialValues.length;
+
+            // Reduce search space around target to optimize performance
+            // Find index closest to target
+            let targetIdx = 0;
+            while (targetIdx < len && commercialValues[targetIdx] < target) {
+                targetIdx++;
+            }
+
+            // Window range around target
+            const lowerBound = Math.max(0, targetIdx - 45);
+            const upperBound = Math.min(len - 1, targetIdx + 45);
+            const subValues = commercialValues.slice(lowerBound, upperBound + 1);
+            const subLen = subValues.length;
+
+            // Helper parallel function
+            const par = (a, b) => (a * b) / (a + b);
+            const par3 = (a, b, c) => 1 / ((1 / a) + (1 / b) + (1 / c));
+
+            // Helper to add combination
+            const addResult = (reqVal, count, topId, topName, formula, resistors, MathBreakdownFunc) => {
+                const absErr = Math.abs(reqVal - target);
+                const relErrPercent = (absErr / target) * 100;
+
+                results.push({
+                    reqVal,
+                    error: relErrPercent,
+                    count,
+                    topologyId: topId,
+                    topologyName: topName,
+                    formula,
+                    resistors,
+                    breakdownFunc: MathBreakdownFunc
+                });
+            };
+
+            // ----------------------------------------------------
+            // COUNT = 1 Resistor
+            // ----------------------------------------------------
+            for (let i = 0; i < subLen; i++) {
+                const r1 = subValues[i];
+                addResult(r1, 1, '1S', 'Resistencia Única', 'R1', [r1], () => [
+                    `R_eq = ${formatResistor(r1)}`
+                ]);
+            }
+
+            if (maxResistors < 2) return results;
+
+            // ----------------------------------------------------
+            // COUNT = 2 Resistors
+            // ----------------------------------------------------
+            for (let i = 0; i < subLen; i++) {
+                const r1 = subValues[i];
+                for (let j = i; j < subLen; j++) {
+                    const r2 = subValues[j];
+
+                    // 1. Serie: R1 + R2
+                    const reqSerie = r1 + r2;
+                    addResult(reqSerie, 2, '2S', '2 en Serie', 'R1 + R2', [r1, r2], () => [
+                        `R_eq = ${formatResistor(r1)} + ${formatResistor(r2)}`,
+                        `R_eq = ${formatResistor(reqSerie)}`
+                    ]);
+
+                    // 2. Paralelo: R1 || R2
+                    const reqPar = par(r1, r2);
+                    addResult(reqPar, 2, '2P', '2 en Paralelo', '(R1 × R2) / (R1 + R2)', [r1, r2], () => [
+                        `R_p = (${formatResistor(r1)} × ${formatResistor(r2)}) / (${formatResistor(r1)} + ${formatResistor(r2)})`,
+                        `R_eq = ${formatResistor(reqPar)}`
+                    ]);
+                }
+            }
+
+            if (maxResistors < 3) return results;
+
+            // ----------------------------------------------------
+            // COUNT = 3 Resistors (All Topologies)
+            // ----------------------------------------------------
+            // To speed up 3-resistor evaluation, we downsample values if array is large
+            const subValues3 = subLen > 50 ? subValues.filter((_, idx) => idx % 2 === 0 || Math.abs(idx - (targetIdx - lowerBound)) < 15) : subValues;
+            const sub3Len = subValues3.length;
+
+            for (let i = 0; i < sub3Len; i++) {
+                const r1 = subValues3[i];
+                for (let j = i; j < sub3Len; j++) {
+                    const r2 = subValues3[j];
+                    for (let k = j; k < sub3Len; k++) {
+                        const r3 = subValues3[k];
+
+                        // Topología 1: 3 en Serie (R1 + R2 + R3)
+                        const req3S = r1 + r2 + r3;
+                        addResult(req3S, 3, '3S', '3 en Serie', 'R1 + R2 + R3', [r1, r2, r3], () => [
+                            `R_eq = ${formatResistor(r1)} + ${formatResistor(r2)} + ${formatResistor(r3)}`,
+                            `R_eq = ${formatResistor(req3S)}`
+                        ]);
+
+                        // Topología 2: 3 en Paralelo (R1 || R2 || R3)
+                        const req3P = par3(r1, r2, r3);
+                        addResult(req3P, 3, '3P', '3 en Paralelo', '1 / (1/R1 + 1/R2 + 1/R3)', [r1, r2, r3], () => [
+                            `1/R_eq = 1/${formatResistor(r1)} + 1/${formatResistor(r2)} + 1/${formatResistor(r3)}`,
+                            `R_eq = ${formatResistor(req3P)}`
+                        ]);
+
+                        // Topología 3: 2 en Paralelo en Serie con 1 -> (R1 || R2) + R3
+                        // Permutaciones de cuál es R3 (la resistencia en serie)
+                        const permsPS = [
+                            { par: [r1, r2], ser: r3 },
+                            { par: [r1, r3], ser: r2 },
+                            { par: [r2, r3], ser: r1 }
+                        ];
+
+                        permsPS.forEach(p => {
+                            const pVal = par(p.par[0], p.par[1]);
+                            const reqPS = pVal + p.ser;
+                            addResult(reqPS, 3, '3PS', '(R1 || R2) + R3', '(R1 × R2)/(R1 + R2) + R3', [p.par[0], p.par[1], p.ser], () => [
+                                `R_p = ${formatResistor(p.par[0])} || ${formatResistor(p.par[1])} = ${formatResistor(pVal)}`,
+                                `R_eq = R_p + ${formatResistor(p.ser)} = ${formatResistor(reqPS)}`
+                            ]);
+                        });
+
+                        // Topología 4: 2 en Serie en Paralelo con 1 -> (R1 + R2) || R3
+                        // Permutaciones de cuál es R3 (la resistencia aislada en paralelo)
+                        const permsSP = [
+                            { ser: [r1, r2], par: r3 },
+                            { ser: [r1, r3], par: r2 },
+                            { ser: [r2, r3], par: r1 }
+                        ];
+
+                        permsSP.forEach(p => {
+                            const sVal = p.ser[0] + p.ser[1];
+                            const reqSP = par(sVal, p.par);
+                            addResult(reqSP, 3, '3SP', '(R1 + R2) || R3', '((R1 + R2) × R3) / (R1 + R2 + R3)', [p.ser[0], p.ser[1], p.par], () => [
+                                `R_s = ${formatResistor(p.ser[0])} + ${formatResistor(p.ser[1])} = ${formatResistor(sVal)}`,
+                                `R_eq = ${formatResistor(sVal)} || ${formatResistor(p.par)} = ${formatResistor(reqSP)}`
+                            ]);
+                        });
+
+                    }
+                }
+            }
+
+            // Deduplicate extremely close combinations and sort by lowest relative error
+            const uniqueResults = [];
+            const seenKeys = new Set();
+
+            results.sort((a, b) => a.error - b.error);
+
+            for (const item of results) {
+                const key = `${item.topologyId}-${item.resistors.join('-')}-${item.reqVal.toFixed(3)}`;
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    uniqueResults.push(item);
+                }
+            }
+
+            return uniqueResults;
+        }
+
+        // ==========================================
+        // 5. SVG SCHEMATIC RENDERER
+        // ==========================================
+
+        function renderSchematicSVG(topologyId, resistors) {
+            const svg = document.getElementById('schematicSvg');
+            svg.innerHTML = ''; // Clear previous
+
+            const strokeColor = '#06b6d4';
+            const resistorFill = '#1e293b';
+            const resistorStroke = '#38bdf8';
+            const textColor = '#f8fafc';
+
+            let content = '';
+
+            // Helper to draw a classic resistor symbol
+            const drawResistor = (x, y, label, valStr, isVert = false) => {
+                if (!isVert) {
+                    return `
+                        <g transform="translate(${x}, ${y})">
+                            <line x1="0" y1="0" x2="15" y2="0" stroke="${strokeColor}" stroke-width="2.5" />
+                            <rect x="15" y="-12" width="50" height="24" rx="4" fill="${resistorFill}" stroke="${resistorStroke}" stroke-width="2"/>
+                            <line x1="65" y1="0" x2="80" y2="0" stroke="${strokeColor}" stroke-width="2.5" />
+                            <text x="40" y="-16" fill="${textColor}" font-size="11" font-family="monospace" text-anchor="middle" font-weight="bold">${label}</text>
+                            <text x="40" y="4" fill="#38bdf8" font-size="10" font-family="monospace" text-anchor="middle">${valStr}</text>
+                        </g>
+                    `;
+                } else {
+                    return `
+                        <g transform="translate(${x}, ${y})">
+                            <line x1="0" y1="0" x2="0" y2="15" stroke="${strokeColor}" stroke-width="2.5" />
+                            <rect x="-12" y="15" width="24" height="45" rx="4" fill="${resistorFill}" stroke="${resistorStroke}" stroke-width="2"/>
+                            <line x1="0" y1="60" x2="0" y2="75" stroke="${strokeColor}" stroke-width="2.5" />
+                            <text x="18" y="35" fill="${textColor}" font-size="11" font-family="monospace" font-weight="bold">${label}</text>
+                            <text x="18" y="50" fill="#38bdf8" font-size="10" font-family="monospace">${valStr}</text>
+                        </g>
+                    `;
+                }
+            };
+
+            // Terminals A & B
+            const terminals = `
+                <circle cx="30" cy="100" r="5" fill="#38bdf8" />
+                <text x="15" y="104" fill="#94a3b8" font-size="12" font-family="monospace" font-weight="bold">A</text>
+                <circle cx="470" cy="100" r="5" fill="#38bdf8" />
+                <text x="480" y="104" fill="#94a3b8" font-size="12" font-family="monospace" font-weight="bold">B</text>
+            `;
+
+            if (topologyId === '1S') {
+                content = `
+                    ${terminals}
+                    <line x1="30" y1="100" x2="210" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(210, 100, 'R1', formatResistor(resistors[0]))}
+                    <line x1="290" y1="100" x2="470" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                `;
+            } else if (topologyId === '2S') {
+                content = `
+                    ${terminals}
+                    <line x1="30" y1="100" x2="150" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(150, 100, 'R1', formatResistor(resistors[0]))}
+                    <line x1="230" y1="100" x2="270" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(270, 100, 'R2', formatResistor(resistors[1]))}
+                    <line x1="350" y1="100" x2="470" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                `;
+            } else if (topologyId === '2P') {
+                content = `
+                    ${terminals}
+                    <line x1="30" y1="100" x2="160" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="160" y1="50" x2="160" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="160" y1="50" x2="210" y2="50" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="160" y1="150" x2="210" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    
+                    ${drawResistor(210, 50, 'R1', formatResistor(resistors[0]))}
+                    ${drawResistor(210, 150, 'R2', formatResistor(resistors[1]))}
+
+                    <line x1="290" y1="50" x2="340" y2="50" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="290" y1="150" x2="340" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="340" y1="50" x2="340" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="340" y1="100" x2="470" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                `;
+            } else if (topologyId === '3S') {
+                content = `
+                    ${terminals}
+                    <line x1="30" y1="100" x2="100" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(100, 100, 'R1', formatResistor(resistors[0]))}
+                    <line x1="180" y1="100" x2="210" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(210, 100, 'R2', formatResistor(resistors[1]))}
+                    <line x1="290" y1="100" x2="320" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(320, 100, 'R3', formatResistor(resistors[2]))}
+                    <line x1="400" y1="100" x2="470" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                `;
+            } else if (topologyId === '3P') {
+                content = `
+                    ${terminals}
+                    <line x1="30" y1="100" x2="160" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="160" y1="40" x2="160" y2="160" stroke="${strokeColor}" stroke-width="2.5" />
+                    
+                    <line x1="160" y1="40" x2="210" y2="40" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="160" y1="100" x2="210" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="160" y1="160" x2="210" y2="160" stroke="${strokeColor}" stroke-width="2.5" />
+
+                    ${drawResistor(210, 40, 'R1', formatResistor(resistors[0]))}
+                    ${drawResistor(210, 100, 'R2', formatResistor(resistors[1]))}
+                    ${drawResistor(210, 160, 'R3', formatResistor(resistors[2]))}
+
+                    <line x1="290" y1="40" x2="340" y2="40" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="290" y1="100" x2="340" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="290" y1="160" x2="340" y2="160" stroke="${strokeColor}" stroke-width="2.5" />
+                    
+                    <line x1="340" y1="40" x2="340" y2="160" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="340" y1="100" x2="470" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                `;
+            } else if (topologyId === '3PS') {
+                // (R1 || R2) + R3
+                content = `
+                    ${terminals}
+                    <line x1="30" y1="100" x2="120" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="120" y1="50" x2="120" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    
+                    <line x1="120" y1="50" x2="160" y2="50" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="120" y1="150" x2="160" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+
+                    ${drawResistor(160, 50, 'R1', formatResistor(resistors[0]))}
+                    ${drawResistor(160, 150, 'R2', formatResistor(resistors[1]))}
+
+                    <line x1="240" y1="50" x2="280" y2="50" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="240" y1="150" x2="280" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="280" y1="50" x2="280" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    
+                    <line x1="280" y1="100" x2="330" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(330, 100, 'R3', formatResistor(resistors[2]))}
+                    <line x1="410" y1="100" x2="470" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                `;
+            } else if (topologyId === '3SP') {
+                // (R1 + R2) || R3
+                content = `
+                    ${terminals}
+                    <line x1="30" y1="100" x2="120" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="120" y1="50" x2="120" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    
+                    <!-- Rama superior en serie (R1 + R2) -->
+                    <line x1="120" y1="50" x2="150" y2="50" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(150, 50, 'R1', formatResistor(resistors[0]))}
+                    <line x1="230" y1="50" x2="270" y2="50" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(270, 50, 'R2', formatResistor(resistors[1]))}
+                    <line x1="350" y1="50" x2="380" y2="50" stroke="${strokeColor}" stroke-width="2.5" />
+
+                    <!-- Rama inferior (R3) -->
+                    <line x1="120" y1="150" x2="210" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    ${drawResistor(210, 150, 'R3', formatResistor(resistors[2]))}
+                    <line x1="290" y1="150" x2="380" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+
+                    <line x1="380" y1="50" x2="380" y2="150" stroke="${strokeColor}" stroke-width="2.5" />
+                    <line x1="380" y1="100" x2="470" y2="100" stroke="${strokeColor}" stroke-width="2.5" />
+                `;
+            }
+
+            svg.innerHTML = content;
+        }
+
+        // ==========================================
+        // 6. UI RENDERERS & EVENT HANDLERS
+        // ==========================================
+
+        function renderColorBandsUI(containerId, resistors, tolerance) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            resistors.forEach((val, index) => {
+                const bands = getColorBands(val, tolerance);
+                
+                let bandsHTML = '';
+                bands.forEach(b => {
+                    bandsHTML += `<div class="w-2.5 h-full" style="background-color: ${b.hex};" title="${b.name}"></div>`;
+                });
+
+                const div = document.createElement('div');
+                div.className = 'bg-slate-900/80 rounded-xl p-3 border border-slate-800 flex flex-col items-center justify-between gap-2';
+                div.innerHTML = `
+                    <div class="text-[11px] font-mono text-slate-400">R${index + 1}: <span class="text-white font-bold">${formatResistor(val)}</span></div>
+                    <div class="w-full h-8 resistor-body rounded-full flex items-center justify-around px-3 py-0.5 overflow-hidden border border-slate-400/40">
+                        <div class="w-3 h-full bg-slate-400/40 -ml-2"></div>
+                        <div class="flex h-full items-center gap-1">
+                            ${bandsHTML}
+                        </div>
+                        <div class="w-3 h-full bg-slate-400/40 -mr-2"></div>
+                    </div>
+                    <div class="text-[9px] text-slate-400 font-mono text-center truncate max-w-full">
+                        ${bands.map(b => b.name).join(' • ')}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function displaySelectedResult(result) {
+            const targetVal = parseResistorValue(document.getElementById('targetInput').value);
+            const tolerance = parseInt(document.querySelector('input[name="tolerance"]:checked').value);
+
+            // Update Header Banner
+            document.getElementById('bestCountBadge').innerText = `${result.count} Resistencia${result.count > 1 ? 's' : ''}`;
+            document.getElementById('bestError').innerText = `${result.error.toFixed(3)}%`;
+            
+            if (result.error < 0.1) {
+                document.getElementById('bestError').className = 'text-xl font-mono font-bold text-emerald-400';
+            } else if (result.error < 1.0) {
+                document.getElementById('bestError').className = 'text-xl font-mono font-bold text-cyan-400';
+            } else {
+                document.getElementById('bestError').className = 'text-xl font-mono font-bold text-amber-400';
+            }
+
+            document.getElementById('bestEquivalent').innerText = formatResistor(result.reqVal);
+            document.getElementById('targetComparison').innerText = `vs ${formatResistor(targetVal)} req.`;
+            document.getElementById('bestTopologyName').innerHTML = `<i class="fa-solid fa-diagram-project"></i> ${result.topologyName}`;
+
+            // List of components
+            const listContainer = document.getElementById('bestComponentsList');
+            listContainer.innerHTML = '';
+            result.resistors.forEach((r, idx) => {
+                listContainer.innerHTML += `
+                    <div class="flex items-center justify-between border-b border-slate-800/50 pb-1">
+                        <span class="text-slate-400">R${idx + 1}:</span>
+                        <span class="text-white font-bold">${formatResistor(r)}</span>
+                    </div>
+                `;
+            });
+
+            // Color bands
+            renderColorBandsUI('colorBandsContainer', result.resistors, tolerance);
+
+            // Render Schematic SVG
+            document.getElementById('schematicLabel').innerText = `Topología (${result.topologyId}): ${result.formula}`;
+            renderSchematicSVG(result.topologyId, result.resistors);
+
+            // Formula & Breakdown
+            document.getElementById('formulaDisplay').innerText = `R_eq = ${result.formula}`;
+            const mathContainer = document.getElementById('mathBreakdown');
+            mathContainer.innerHTML = '';
+            const breakdownLines = result.breakdownFunc();
+            breakdownLines.forEach(line => {
+                mathContainer.innerHTML += `<div class="text-cyan-300">${line}</div>`;
+            });
+
+            document.getElementById('toleranceBadge').innerText = `Serie E${tolerance === 10 ? '12 (10%)' : '96 (1%)'}`;
+        }
+
+        function filterTable(countFilter) {
+            activeFilter = countFilter;
+
+            // Update button styles
+            ['All', '1', '2', '3'].forEach(f => {
+                const btn = document.getElementById(`btnFilter${f}`);
+                if ((f === 'All' && countFilter === 'all') || f === String(countFilter)) {
+                    btn.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+                } else {
+                    btn.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 hover:text-white border border-slate-700';
+                }
+            });
+
+            renderTableRows();
+        }
+
+        function renderTableRows() {
+            const tbody = document.getElementById('resultsTableBody');
+            tbody.innerHTML = '';
+
+            let filtered = currentResults;
+            if (activeFilter !== 'all') {
+                filtered = currentResults.filter(r => r.count === activeFilter);
+            }
+
+            const top10 = filtered.slice(0, 10);
+
+            if (top10.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">No se encontraron combinaciones para este filtro.</td></tr>`;
+                return;
+            }
+
+            top10.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition cursor-pointer';
+                tr.onclick = () => displaySelectedResult(item);
+
+                const resistorsFormatted = item.resistors.map(r => formatResistor(r)).join(', ');
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-bold ${index === 0 ? 'text-amber-400' : 'text-slate-400'}">#${index + 1}</td>
+                    <td class="py-3 px-4 text-cyan-300 font-sans font-medium">${item.topologyName}</td>
+                    <td class="py-3 px-4 text-slate-200">${resistorsFormatted}</td>
+                    <td class="py-3 px-4 text-right font-bold text-white">${formatResistor(item.reqVal)}</td>
+                    <td class="py-3 px-4 text-right font-bold ${item.error < 0.1 ? 'text-emerald-400' : item.error < 1 ? 'text-cyan-400' : 'text-amber-400'}">
+                        ${item.error.toFixed(3)}%
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <button class="px-2.5 py-1 text-xs rounded-md bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-cyan-400 font-sans transition">
+                            <i class="fa-solid fa-eye"></i> Ver
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function calculateCombinations() {
+            const inputVal = document.getElementById('targetInput').value;
+            const target = parseResistorValue(inputVal);
+
+            if (isNaN(target) || target <= 0) {
+                alert('Por favor introduce un valor de resistencia válido (ej. 1540, 1.54k, 4.7k).');
+                return;
+            }
+
+            const tolerance = parseInt(document.querySelector('input[name="tolerance"]:checked').value);
+            const maxResistors = parseInt(document.getElementById('maxResistors').value);
+
+            const commercialValues = generateCommercialValues(tolerance);
+            currentResults = solveCombinations(target, commercialValues, maxResistors);
+
+            if (currentResults.length > 0) {
+                displaySelectedResult(currentResults[0]);
+                renderTableRows();
+            }
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            calculateCombinations();
+        };
+    </script>
+</body>
+</html>
