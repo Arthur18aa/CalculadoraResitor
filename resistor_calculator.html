@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Combinación de Resistencias Comerciales</title>
+    <title>Calculadora de Resistencias</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -116,15 +116,10 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-                        Calculadora de Resistores <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-mono"></span>
+                        Calculadora Resistores
                     </h1>
-                    <p class="text-xs text-slate-400"></p>
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <span class="text-xs text-slate-400 hidden sm:inline-flex items-center gap-1">
-                    <i class="fa-solid fa-bolt text-amber-400">
-                </span>
             </div>
         </div>
     </header>
@@ -146,7 +141,7 @@
                 <!-- Presets -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                        Presets Rápidos
+                        Valores sugeridos
                     </label>
                     <div class="flex flex-wrap gap-2">
                         <button onclick="setPreset('88.5')" class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">88.5 Ω</button>
@@ -371,6 +366,20 @@
                 </table>
             </div>
 
+        </section>
+
+        <section class="glass-panel rounded-2xl p-6 space-y-4 mt-8">
+            <div class="border-b border-slate-800 pb-4">
+                <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-cart-shopping text-cyan-400"></i> Opciones de Compra
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">Busca la combinación de resistores seleccionada en tiendas destacadas de electrónica.</p>
+            </div>
+            
+            <!-- Contenedor dinámico de tiendas -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="buyOptionsContainer">
+                <!-- Se llenará vía JavaScript -->
+            </div>
         </section>
 
     </main>
@@ -876,6 +885,100 @@
             svg.innerHTML = content;
         }
 
+       // ==========================================
+        // 5.5 PRODUCTOS Y PRECIOS ESTIMADOS
+        // ==========================================
+        
+        function renderBuyOptions(resistors, tolerance) {
+            const container = document.getElementById('buyOptionsContainer');
+            container.innerHTML = '';
+            
+            // Precios estimados promedio en pesos mexicanos (MXN)
+            const PRECIO_UNITARIO_MXN = 1.50; // Aprox $1.50 pesos por resistencia de 1/4W
+            const PRECIO_KIT_MXN = 180.00;    // Kit surtido típico de 500-600 pzas
+
+            let totalPiezas = resistors.length * PRECIO_UNITARIO_MXN;
+            let toleranceStr = tolerance === 10 ? '10% (Carbón)' : '1% (Metal)';
+
+            // Construir la lista con el tamaño intermedio
+            let productsListHTML = resistors.map((r, i) => {
+                return `
+                    <div class="flex items-center justify-between py-3.5 border-b border-slate-800/60 last:border-0 px-2">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center border border-slate-700 shadow-inner">
+                                <i class="fa-solid fa-bolt text-cyan-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-white">Resistencia R${i+1}: ${formatResistor(r)}</p>
+                                <p class="text-xs text-slate-400 mt-0.5">1/4W, Tolerancia ${toleranceStr}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-base font-mono font-bold text-emerald-400">$${PRECIO_UNITARIO_MXN.toFixed(2)} MXN</p>
+                            <p class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">1 Unidad</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Inyectar la vista en una sola columna (flex-col y space-y-6)
+            container.innerHTML = `
+                <div class="flex flex-col space-y-6 w-full">
+                    
+                    <!-- Presupuesto 1: Compra de piezas sueltas (Ancho completo) -->
+                    <div class="bg-slate-900/60 rounded-2xl p-7 border border-slate-800/80 relative overflow-hidden group hover:border-cyan-500/40 transition-colors w-full flex flex-col">
+                        <div class="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-microchip text-7xl"></i>
+                        </div>
+                        
+                        <h4 class="text-base font-semibold text-white mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-cyan-400"></i> Presupuesto por Componentes
+                        </h4>
+                        <p class="text-xs text-slate-400 mb-6">Costo estimado comprando piezas sueltas en tiendas de electrónica.</p>
+                        
+                        <div class="bg-slate-950/60 rounded-xl p-3 border border-slate-800/50 mb-6">
+                            ${productsListHTML}
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-5 mt-auto border-t border-slate-800/80">
+                            <span class="text-sm text-slate-400 font-medium">Total estimado (Solo piezas):</span>
+                            <span class="text-xl font-bold font-mono text-emerald-400">$${totalPiezas.toFixed(2)} MXN</span>
+                        </div>
+                    </div>
+
+                    <!-- Presupuesto 2: Alternativa de Kit Surtido (Ancho completo) -->
+                    <div class="bg-slate-900/60 rounded-2xl p-7 border border-slate-800/80 relative overflow-hidden group hover:border-orange-500/40 transition-colors w-full flex flex-col">
+                        <div class="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-box-open text-7xl"></i>
+                        </div>
+                        
+                        <h4 class="text-base font-semibold text-white mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-cubes text-orange-400"></i> Alternativa: Kit Surtido Completo
+                        </h4>
+                        <p class="text-xs text-slate-400 mb-6">Precio promedio en línea. Ideal para tener inventario de todos los valores comerciales.</p>
+                        
+                        <!-- La "cajita" con la información del kit -->
+                        <div class="flex items-center gap-5 bg-slate-950/60 rounded-xl p-5 border border-slate-800/50 mb-6">
+                            <div class="w-14 h-14 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20 shrink-0">
+                                <i class="fa-solid fa-box text-orange-400 text-2xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-base font-semibold text-white">Kit 600 Resistencias</p>
+                                <p class="text-xs text-slate-400 mt-1 leading-relaxed">Incluye los valores calculados y más. Surtido desde 10Ω hasta 1MΩ.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- El precio colocado justo debajo, igual que en la primera tarjeta -->
+                        <div class="flex justify-between items-center pt-5 mt-auto border-t border-slate-800/80">
+                            <span class="text-sm text-slate-400 font-medium">Inversión promedio:</span>
+                            <span class="text-xl font-bold font-mono text-orange-400">$${PRECIO_KIT_MXN.toFixed(2)} MXN</span>
+                        </div>
+                    </div>
+
+                </div>
+            `;
+        }
+
         // ==========================================
         // 6. UI RENDERERS & EVENT HANDLERS
         // ==========================================
@@ -960,6 +1063,8 @@
             });
 
             document.getElementById('toleranceBadge').innerText = `Serie E${tolerance === 10 ? '12 (10%)' : '96 (1%)'}`;
+            // Generar opciones de compra
+            renderBuyOptions(result.resistors, tolerance);
         }
 
         function filterTable(countFilter) {
